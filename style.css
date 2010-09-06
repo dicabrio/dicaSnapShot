@@ -1,0 +1,23 @@
+/* 
+Document   : style.css
+Created on : May 28, 2009, 12:17:00 PM
+Author     : robert
+Description:
+Purpose of the stylesheet follows.
+*/
+
+/* 
+TODO customize this sample style
+Syntax recommendation http://www.w3.org/TR/REC-CSS2/
+*/
+
+root { 
+	display: block;
+}
+
+*{font-size: 11px; font-family: arial}
+img {border: none;}
+#list { list-style: none; margin: 0; padding: 0; height: 60px; }
+#list li { float: left; margin: 0 10px 0 0; border: 1px solid black; padding: 5px; text-align: center; width: 80px; }
+#list li img { height: 36px; }
+#list {font-size: 10px;}
