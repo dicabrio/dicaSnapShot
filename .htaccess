@@ -1,0 +1,6 @@
+RewriteEngine on
+
+# handle requests for cmspages http://www.domain.com/login/
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^(.+)$ cmshandler.php?url=$1 [L,QSA]
