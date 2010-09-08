@@ -8,6 +8,14 @@ class Database extends DataRecord {
 
 	private $snapshots;
 
+	private $mysqllocation;
+
+	private $dbuser;
+
+	private $dbhost;
+
+	private $dbpass;
+
 	/**
 	 * @param string $name
 	 */
@@ -27,33 +35,60 @@ class Database extends DataRecord {
 	 * @param string $mysqlHost
 	 * @param string $whereToSave
 	 */
-	public function createSnapshot($mysqlLocation, $mysqlUser, $mysqlPass, $mysqlHost, $whereToSave) {
+	public function createSnapshot($whereToSave=null) {
+
+		if ($whereToSave == null) {
+			$whereToSave = $this->location;
+		}
+
 		$name = $this->getAttr('Database');
 		$snapshot = $whereToSave.$name.'_'.time().'_a0_.sql';
-		$sToExecute	= $mysqlLocation.'mysqldump -u '.$mysqlUser.' --password='.$mysqlPass.' -h '.$mysqlHost.' '.$name.' > '.$snapshot;
+		$sToExecute	= $this->mysqllocation.'mysqldump -u '.$this->dbuser.' --password='.$this->dbpass.' -h '.$this->dbhost.' '.$name.' > '.$snapshot;
 		$output = shell_exec($sToExecute);
 
 		return new Snapshot($name, $whereToSave, $snapshot);
 	}
 
-	public function restoreSnapshot($mysqlLocation, $mysqlUser, $mysqlPass, $mysqlHost, $snapshotName) {
+	/**
+	 *
+	 * @param string $mysqlLocation
+	 * @param string $mysqlUser
+	 * @param string $mysqlPass
+	 * @param string $mysqlHost
+	 * @param string $snapshotName
+	 */
+	public function restoreSnapshot($snapshotName) {
 		$snapshot = $this->getSnapshot($snapshotName);
 
 		if ($snapshot == null) {
 			throw new SnapshotException('There is no snapshot "'.$snapshot.'" found for '.$this->getAttr('Database').'');
 		}
 
-		$sToExecute	= $mysqlLocation.'mysql -u '.$mysqlUser.' --password='.$mysqlPass.' -h '.$mysqlHost.' --database='.$this->getAttr('Database').' < '.$snapshot->getSnapshotFullPathFile();
+		$sToExecute	= $this->mysqllocation.'mysql -u '.$this->dbuser.' --password='.$this->dbpass.' -h '.$this->dbhost.' --database='.$this->getAttr('Database').' < '.$snapshot->getSnapshotFullPathFile();
 		$output = shell_exec($sToExecute);
 
 	}
 
-	public function setLocation($location) {
+	public function deleteSnapshot($snapshotName) {
+		$snapshot = $this->getSnapshot($snapshotName);
+		$snapshot->delete();
+	}
+
+	public function setSnapshotLocation($location) {
 		$this->location = $location;
+	}
+	
+	public function setMySQLPath($path) {
+		$this->mysqllocation = $path;
+	}
+
+	public function setDbCredentials($dbhost, $dbuser, $dbpass) {
+		$this->dbhost = $dbhost;
+		$this->dbuser = $dbuser;
+		$this->dbpass = $dbpass;
 	}
 
 	/**
-	 *
 	 * @return string
 	 */
 	public function getName() {
@@ -98,14 +133,16 @@ class Database extends DataRecord {
 	 * factory method. Getting all databases
 	 * @return array
 	 */
-	public static function getAllDatabases($location) {
+	public static function getAllDatabases($location, $mysqlPath, $dbhost, $dbuser, $dbpass) {
 
 		$foundDatabases = parent::findBySql(__CLASS__, "SHOW DATABASES");
 		
 		$databases = array();
 		foreach ($foundDatabases as $database) {
 			if (!in_array($database->getName(), self::$donotshow)) {
-				$database->setLocation($location);
+				$database->setSnapshotLocation($location);
+				$database->setMySQLPath($mysqlPath);
+				$database->setDbCredentials($dbhost, $dbuser, $dbpass);
 				$databases[$database->getName()] = $database;
 			}
 		}

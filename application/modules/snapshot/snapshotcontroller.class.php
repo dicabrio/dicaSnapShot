@@ -46,7 +46,12 @@ class SnapshotController implements Controller {
 		$this->snapshotsLocation = $snapshotDir->getValue();
 		$this->mysqlLocation = $mysqlLocation->getValue();
 
-		$this->databases = Database::getAllDatabases($this->snapshotsLocation);
+		$this->databases = Database::getAllDatabases($this->snapshotsLocation,
+					$this->mysqlLocation,
+					Conf::get('database.dbhost'),
+					Conf::get('database.dbuser'),
+					Conf::get('database.dbpass'));
+
 		$this->view = new View('snapshot/listalldatabases.php');
 		$this->view->assign('databases', $this->databases);
 
@@ -87,11 +92,7 @@ class SnapshotController implements Controller {
 		try {
 
 			$database = $this->getDatabase();
-			$database->createSnapshot($this->mysqlLocation,
-					Conf::get('database.dbuser'),
-					Conf::get('database.dbpass'),
-					Conf::get('database.dbhost'),
-					$this->snapshotsLocation);
+			$database->createSnapshot();
 
 		} catch (Exception $e) {
 			$this->session->set('error', $e->getMessage());
@@ -106,11 +107,7 @@ class SnapshotController implements Controller {
 		try {
 			
 			$database = $this->getDatabase();
-			$database->restoreSnapshot($this->mysqlLocation,
-					Conf::get('database.dbuser'),
-					Conf::get('database.dbpass'),
-					Conf::get('database.dbhost'),
-					Util::getUrlSegment(3));
+			$database->restoreSnapshot(Util::getUrlSegment(3));
 
 		} catch (Exception $e) {
 			$this->session->set('error', $e->getMessage());
@@ -124,21 +121,29 @@ class SnapshotController implements Controller {
 
 		try {
 
-			$database = Util::getUrlSegment(2);
-			$snapshot = Util::getUrlSegment(3);
-
-			$snapshot = new Snapshot($database, $this->snapshotsLocation, $this->snapshotsLocation.$snapshot);
-			$snapshot->delete();
+			$database = $this->getDatabase();
+			$database->deleteSnapshot(Util::getUrlSegment(3));
 
 		} catch (Exception $e) {
 			$this->session->set('error', $e->getMessage());
 		}
 
-		Util::gotoPage(Conf::get('general.url.www').'/snapshot/#'.$database);
+		Util::gotoPage(Conf::get('general.url.www').'/snapshot/#'.$database->getName());
 
 	}
 
 	public function rename() {
 		return 'not implemented yet';
+
+		try {
+
+			$database = $this->getDatabase();
+			$database->renameSnapshot('oldname', 'newname');
+
+		} catch (Exception $e) {
+			$this->session->set('error', $e->getMessage());
+		}
+
+		Util::gotoPage(Conf::get('general.url.www').'/snapshot/#'.$database->getName());
 	}
 }
