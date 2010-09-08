@@ -1,5 +1,10 @@
 <?php
-
+/**
+ * @todo when no config variables like mysql_location and
+ * snapshot_dir are set or found in the database redirect them to
+ * a settings controller so those variables can be saved in the database
+ * 
+ */
 class SnapshotController implements Controller {
 
 	/**
