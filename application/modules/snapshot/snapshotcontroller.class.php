@@ -48,8 +48,14 @@ class SnapshotController implements Controller {
 
 		$mysqlLocation = Settings::getByName('mysql_location');
 		$snapshotDir = Settings::getByName('snapshot_dir');
+
 		$this->snapshotsLocation = $snapshotDir->getValue();
 		$this->mysqlLocation = $mysqlLocation->getValue();
+
+		if (empty($this->snapshotsLocation) || empty($this->mysqlLocation)) {
+			$this->session->set('notice', 'You need to specify the snapshot path or the mysql location');
+			Util::gotoPage(Conf::get('general.url.www').'/settings/');
+		}
 
 		$this->databases = Database::getAllDatabases($this->snapshotsLocation,
 					$this->mysqlLocation,

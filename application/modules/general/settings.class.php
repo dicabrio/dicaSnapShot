@@ -45,4 +45,27 @@ class Settings extends DataRecord {
 
 	}
 
+	public function setValue($value) {
+		$this->setAttr('value', $value);
+	}
+
+	/**
+	 *
+	 * @return string
+	 */
+	public function getName() {
+
+		return $this->getAttr('name');
+
+	}
+
+	/**
+	 * get all setting variables
+	 * 
+	 * @return array
+	 */
+	public static function getAll() {
+		return parent::findAll(__CLASS__, parent::ALL);
+	}
+
 }
