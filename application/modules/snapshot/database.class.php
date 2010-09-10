@@ -1,5 +1,7 @@
 <?php
-
+/**
+ * 
+ */
 class Database extends DataRecord {
 
 	private static $donotshow = array('mysql' => 'mysql', 'information_schema' => 'information_schema');
@@ -29,10 +31,6 @@ class Database extends DataRecord {
 
 	/**
 	 *
-	 * @param string $mysqlLocation
-	 * @param string $mysqlUser
-	 * @param string $mysqlPass
-	 * @param string $mysqlHost
 	 * @param string $whereToSave
 	 */
 	public function createSnapshot($whereToSave=null) {
@@ -51,24 +49,24 @@ class Database extends DataRecord {
 
 	/**
 	 *
-	 * @param string $mysqlLocation
-	 * @param string $mysqlUser
-	 * @param string $mysqlPass
-	 * @param string $mysqlHost
 	 * @param string $snapshotName
 	 */
 	public function restoreSnapshot($snapshotName) {
 		$snapshot = $this->getSnapshot($snapshotName);
-
-		if ($snapshot == null) {
-			throw new SnapshotException('There is no snapshot "'.$snapshot.'" found for '.$this->getAttr('Database').'');
-		}
-
 		$sToExecute	= $this->mysqllocation.'mysql -u '.$this->dbuser.' --password='.$this->dbpass.' -h '.$this->dbhost.' --database='.$this->getAttr('Database').' < '.$snapshot->getSnapshotFullPathFile();
 		$output = shell_exec($sToExecute);
 
 	}
 
+	public function renameSnapshot($oldSnapshotName, $newSnapshotName) {
+		$snapshot = $this->getSnapshot($oldSnapshotName);
+		$snapshot->addLabel($newSnapshotName);
+	}
+
+	/**
+	 *
+	 * @param string $snapshotName
+	 */
 	public function deleteSnapshot($snapshotName) {
 		$snapshot = $this->getSnapshot($snapshotName);
 		$snapshot->delete();
@@ -116,13 +114,14 @@ class Database extends DataRecord {
 
 		$this->getSnapshots();
 
+		$snapshot = null;
 		foreach ($this->snapshots as $snapshot) {
 			if ($snapshot->getSnapshotFile() == $name) {
 				return $snapshot;
 			}
 		}
 
-		return null;
+		throw new SnapshotException('There is no snapshot "'.$snapshot.'" found for '.$this->getAttr('Database').'');
 	}
 
 	/**
@@ -152,18 +151,47 @@ class Database extends DataRecord {
 
 }
 
+/**
+ *
+ */
 class Snapshot {
 
+	/**
+	 *
+	 * @var string
+	 */
 	private $dbname;
 
+	/**
+	 *
+	 * @var location
+	 */
 	private $location;
 
+	/**
+	 *
+	 * @var string
+	 */
 	private $snapshot;
 
+	/**
+	 *
+	 * @var string
+	 */
 	private $timeOfCreation;
 
+	/**
+	 *
+	 * @var string
+	 */
 	private $label;
 
+	/**
+	 *
+	 * @param string $dbname
+	 * @param string $location
+	 * @param string $snapshot
+	 */
 	public function __construct($dbname, $location, $snapshot) {
 
 		if (empty($dbname)) {
@@ -183,6 +211,10 @@ class Snapshot {
 
 	}
 
+	/**
+	 *
+	 * @param string $snapshot
+	 */
 	private function processSnapshotFilename($snapshot) {
 		$stingToValidate = str_replace($this->location.$this->dbname.'_', '', $snapshot);
 		$pattern = '/^(\d+)_a0_([a-zA-Z0-9-_]*)\.sql$/';
@@ -195,27 +227,62 @@ class Snapshot {
 
 	}
 
+	/**
+	 *
+	 * @return string
+	 */
 	public function getLabel() {
 		return $this->label;
 	}
 
+	/**
+	 *
+	 * @return string
+	 */
 	public function getSnapshotFile() {
 		return str_replace($this->location, '', $this->snapshot);
 	}
 
+	/**
+	 *
+	 * @return string
+	 */
 	public function getSnapshotFullPathFile() {
 		return $this->snapshot;
 	}
 
+	/**
+	 *
+	 * @return string
+	 */
 	public function getTimeOfCreation() {
 		return $this->timeOfCreation;
 	}
 
+	/**
+	 * @return void
+	 */
 	public function delete() {
 		$fileMan = new FileManager($this->snapshot);
 		$fileMan->delete();
 	}
 
+	/**
+	 *
+	 * @param string $title
+	 */
+	public function addLabel($title) {
+		$title = str_replace(array(' ', '_'), '', trim($title));
+		$fileMan = new FileManager($this->snapshot);
+		$fileMan->moveTo($this->location, $this->dbname.'_'.$this->timeOfCreation.'_a0_'.$title.'.sql');
+	}
+
+	/**
+	 *
+	 * @param string $dbName
+	 * @param string $location
+	 * @return array
+	 */
 	public static function getForDatabase($dbName, $location) {
 		$snapshots = array();
 

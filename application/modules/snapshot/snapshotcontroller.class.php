@@ -40,11 +40,18 @@ class SnapshotController implements Controller {
 	private $session;
 
 	/**
+	 *
+	 * @var Request
+	 */
+	private $request;
+
+	/**
 	 * @param string $method
 	 */
 	public function __construct($method) {
 
 		$this->session = Session::getInstance();
+		$this->request = Request::getInstance();
 
 		$mysqlLocation = Settings::getByName('mysql_location');
 		$snapshotDir = Settings::getByName('snapshot_dir');
@@ -144,12 +151,18 @@ class SnapshotController implements Controller {
 	}
 
 	public function rename() {
-		return 'not implemented yet';
+
+		if (Request::method() != Request::POST) {
+			Util::gotoPage(Conf::get('general.url.www').'/snapshot/');
+		}
 
 		try {
 
+			$oldSnapshotName =  Util::getUrlSegment(3);
+			$newTitle = $this->request->post('renameto');
+
 			$database = $this->getDatabase();
-			$database->renameSnapshot('oldname', 'newname');
+			$database->renameSnapshot($oldSnapshotName, $newTitle);
 
 		} catch (Exception $e) {
 			$this->session->set('error', $e->getMessage());
