@@ -1,4 +1,5 @@
 <?php
+
 /**
  * @todo when no config variables like mysql_location and
  * snapshot_dir are set or found in the database redirect them to
@@ -11,34 +12,28 @@ class SnapshotController implements Controller {
 	 * @var array
 	 */
 	private $arguments;
-
 	/**
 	 * @var View
 	 */
 	private $view;
-
 	/**
 	 *
 	 * @var array
 	 */
 	private $databases;
-
 	/**
 	 * @var string
 	 */
 	private $snapshotsLocation;
-
 	/**
 	 * @var string
 	 */
 	private $mysqlLocation;
-
 	/**
 	 *
 	 * @var Session
 	 */
 	private $session;
-
 	/**
 	 *
 	 * @var Request
@@ -61,18 +56,17 @@ class SnapshotController implements Controller {
 
 		if (empty($this->snapshotsLocation) || empty($this->mysqlLocation)) {
 			$this->session->set('notice', 'You need to specify the snapshot path or the mysql location');
-			Util::gotoPage(Conf::get('general.url.www').'/settings/');
+			Util::gotoPage(Conf::get('general.url.www') . '/settings/');
 		}
 
 		$this->databases = Database::getAllDatabases($this->snapshotsLocation,
-					$this->mysqlLocation,
-					Conf::get('database.dbhost'),
-					Conf::get('database.dbuser'),
-					Conf::get('database.dbpass'));
+						$this->mysqlLocation,
+						Conf::get('database.dbhost'),
+						Conf::get('database.dbuser'),
+						Conf::get('database.dbpass'));
 
 		$this->view = new View('snapshot/listalldatabases.php');
 		$this->view->assign('databases', $this->databases);
-
 	}
 
 	public function _index() {
@@ -81,7 +75,6 @@ class SnapshotController implements Controller {
 		$this->session->set('error', null);
 
 		return $this->view->getContents();
-
 	}
 
 	public function _default() {
@@ -99,40 +92,36 @@ class SnapshotController implements Controller {
 		$databaseName = Util::getUrlSegment(2);
 		if (!isset($this->databases[$databaseName])) {
 			$this->session->set('error', 'Cannot create a snapshot of this database. It doesn\'t exist');
-			Util::gotoPage(Conf::get('general.url.www').'/snapshot/#'.$databaseName);
+			Util::gotoPage(Conf::get('general.url.www') . '/snapshot/#' . $databaseName);
 		}
 
 		return $this->databases[$databaseName];
 	}
 
 	public function create() {
-		
+
 		try {
 
 			$database = $this->getDatabase();
 			$database->createSnapshot();
-
 		} catch (Exception $e) {
 			$this->session->set('error', $e->getMessage());
 		}
 
-		Util::gotoPage(Conf::get('general.url.www').'/snapshot/#'.$database->getName());
-
+		Util::gotoPage(Conf::get('general.url.www') . '/snapshot/#' . $database->getName());
 	}
 
 	public function restore() {
 
 		try {
-			
+
 			$database = $this->getDatabase();
 			$database->restoreSnapshot(Util::getUrlSegment(3));
-
 		} catch (Exception $e) {
 			$this->session->set('error', $e->getMessage());
 		}
 
-		Util::gotoPage(Conf::get('general.url.www').'/snapshot/#'.$database->getName());
-		
+		Util::gotoPage(Conf::get('general.url.www') . '/snapshot/#' . $database->getName());
 	}
 
 	public function delete() {
@@ -141,33 +130,56 @@ class SnapshotController implements Controller {
 
 			$database = $this->getDatabase();
 			$database->deleteSnapshot(Util::getUrlSegment(3));
-
 		} catch (Exception $e) {
 			$this->session->set('error', $e->getMessage());
 		}
 
-		Util::gotoPage(Conf::get('general.url.www').'/snapshot/#'.$database->getName());
-
+		Util::gotoPage(Conf::get('general.url.www') . '/snapshot/#' . $database->getName());
 	}
 
 	public function rename() {
 
 		if (Request::method() != Request::POST) {
-			Util::gotoPage(Conf::get('general.url.www').'/snapshot/');
+			Util::gotoPage(Conf::get('general.url.www') . '/snapshot/');
 		}
 
 		try {
 
-			$oldSnapshotName =  Util::getUrlSegment(3);
+			$oldSnapshotName = Util::getUrlSegment(3);
 			$newTitle = $this->request->post('renameto');
 
 			$database = $this->getDatabase();
 			$database->renameSnapshot($oldSnapshotName, $newTitle);
+		} catch (Exception $e) {
+			$this->session->set('error', $e->getMessage());
+		}
+
+		Util::gotoPage(Conf::get('general.url.www') . '/snapshot/#' . $database->getName());
+	}
+
+	/**
+	 * download the snapshot
+	 */
+	public function download() {
+		try {
+
+			$database = $this->getDatabase();
+
+			$requestedSnapshotName = Util::getUrlSegment(3);
+			if (false !== strpos($requestedSnapshotName, '..')) {
+				$this->session->set('error', 'You are not allowed to download this file');
+				Util::gotoPage(Conf::get('general.url.www') . '/snapshot/#' . $database->getName());
+			}
+
+			$file = new FileManager($this->snapshotsLocation . '/' . $requestedSnapshotName);
+			$file->download();
+			exit;
 
 		} catch (Exception $e) {
 			$this->session->set('error', $e->getMessage());
 		}
 
-		Util::gotoPage(Conf::get('general.url.www').'/snapshot/#'.$database->getName());
+		Util::gotoPage(Conf::get('general.url.www') . '/snapshot/#' . $database->getName());
 	}
+
 }

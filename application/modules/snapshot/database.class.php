@@ -296,7 +296,7 @@ class Snapshot {
 			}
 		}
 
-		return $snapshots;
+		return array_reverse($snapshots);
 	}
 }
 

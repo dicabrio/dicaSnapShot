@@ -1,10 +1,10 @@
 <?php
+
 /**
  * handle stuff with files with this class
  *
  */
 class FileManager {
-
 	/**
 	 * @var const
 	 */
@@ -15,13 +15,11 @@ class FileManager {
 	 * @var string
 	 */
 	private $filename;
-
 	/**
 	 *
 	 * @var string
 	 */
 	private $path;
-
 	/**
 	 *
 	 * @var string
@@ -43,19 +41,16 @@ class FileManager {
 		} else if ($create === true) {
 			$this->createFile($pFile);
 		}
-
 	}
 
 	public function getPath() {
 
 		return realpath($this->path);
-
 	}
 
 	public function getFilename() {
 
 		return $this->filename;
-
 	}
 
 	/**
@@ -70,7 +65,6 @@ class FileManager {
 		}
 
 		return realpath($this->path . self::SEP . $this->filename);
-
 	}
 
 	/**
@@ -80,11 +74,10 @@ class FileManager {
 	 */
 	public function getExtension() {
 
-		$afile = explode('.',$this->filename);
+		$afile = explode('.', $this->filename);
 		$extension = array_pop($afile);
 
 		return $extension;
-
 	}
 
 	/**
@@ -94,7 +87,6 @@ class FileManager {
 
 		$sFileContents = file_get_contents($this->getFullPath());
 		return $sFileContents;
-
 	}
 
 	/**
@@ -105,7 +97,6 @@ class FileManager {
 	public function setContents($contents) {
 
 		return file_put_contents($this->getFullPath(), $contents);
-		
 	}
 
 	/**
@@ -115,7 +106,6 @@ class FileManager {
 	private function exists() {
 
 		return (file_exists($this->getFullPath()) && is_file($this->getFullPath()));
-
 	}
 
 	/**
@@ -145,18 +135,27 @@ class FileManager {
 		}
 
 		if (is_uploaded_file($this->getFullPath())) {
-			if (!move_uploaded_file($this->getFullPath(), $destination.self::SEP.$sFilename)) {
+			if (!move_uploaded_file($this->getFullPath(), $destination . self::SEP . $sFilename)) {
 				throw new FileException('problem while moving uploaded file');
 			}
 		} else {
-			rename($this->getFullPath(), $destination.self::SEP.$sFilename);
+			rename($this->getFullPath(), $destination . self::SEP . $sFilename);
 		}
 
 		$this->path = $destination;
 		$this->filename = $sFilename;
+	}
 
-
-
+	public function download() {
+		header('Content-Description: File Transfer');
+		header('Content-Type: application/octet-stream');
+		header('Content-Disposition: attachment; filename=' . basename($this->getFullPath()));
+		header('Content-Transfer-Encoding: binary');
+		header('Expires: 0');
+		header('Cache-Control: must-revalidate, post-check=0, pre-check=0');
+		header('Pragma: public');
+		header('Content-Length: ' . filesize($this->getFullPath()));
+		readfile($this->getFullPath());
 	}
 
 	/**
@@ -168,7 +167,6 @@ class FileManager {
 
 		$fileinfo = new finfo(FILEINFO_MIME);
 		return $fileinfo->file($this->getFullPath());
-
 	}
 
 	/**
@@ -179,11 +177,10 @@ class FileManager {
 
 		$this->validateFile();
 		if (!unlink($this->getFullPath())) {
-			throw new FileException('File: '.$this->getFullPath().' cannot be deleted');
+			throw new FileException('File: ' . $this->getFullPath() . ' cannot be deleted');
 		}
 
 		return true;
-
 	}
 
 	/**
@@ -199,12 +196,11 @@ class FileManager {
 			// get path
 			$this->path = implode(self::SEP, $afilename);
 			// get extension
-			$afile = explode('.',$this->filename);
+			$afile = explode('.', $this->filename);
 			$this->extension = $this->getExtension();
 		} else {
 			$this->filename = $filename;
 		}
-
 	}
 
 	/**
@@ -214,31 +210,31 @@ class FileManager {
 	private function validateFile() {
 
 		if (!$this->exists()) {
-			throw new FileNotFoundException('File '.$this->getFullPath().' cannot be found');
+			throw new FileNotFoundException('File ' . $this->getFullPath() . ' cannot be found');
 		}
-
 	}
 
 	/**
-	 *	Validate the given destination
-	 *	@throws DirException
+	 * 	Validate the given destination
+	 * 	@throws DirException
 	 */
 	private function validateDestination($destination) {
 
 		if (!is_dir($destination)) {
-			throw new DirException('Given destination "'.$destination.'" is not a directory');
+			throw new DirException('Given destination "' . $destination . '" is not a directory');
 		}
 
 		if (!is_writable($destination)) {
-			throw new DirNotWritableException('Directory '.$destination.' is not writable');
+			throw new DirNotWritableException('Directory ' . $destination . ' is not writable');
 		}
-
 	}
+
 }
 
 class DirException extends Exception {
 
 }
+
 class FileException extends Exception {
 
 }

@@ -180,6 +180,7 @@
 						<th>Time</th>
 						<th>actions</th>
 						<th>rename</th>
+						<th>Download</th>
 					</tr>
 					<?php foreach ($database->getSnapshots() as $snapshot) : ?>
 					<tr>
@@ -204,6 +205,9 @@
 							<form style='height:12px;' action="<?php echo Conf::get('general.url.www'); ?>/snapshot/rename/<?php echo $database->getName(); ?>/<?php echo $snapshot->getSnapshotFile(); ?>" method='post'>
 								<input type="text" value="" name="renameto" size="16" /><input type="submit" value="rename" class="button" />
 							</form>
+						</td>
+						<td>
+							<a href="<?php echo Conf::get('general.url.www'); ?>/snapshot/download/<?php echo $database->getName(); ?>/<?php echo $snapshot->getSnapshotFile(); ?>">Download snapshot</a>
 						</td>
 					</tr>
 					<?php endforeach; ?>
