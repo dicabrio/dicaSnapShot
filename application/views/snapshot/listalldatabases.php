@@ -195,11 +195,11 @@
 				});
 
 				if ($('#tabholder').width() < tabBarLength) {
-					//$('#action').show();
+					$('#action').show();
 					// add navigation
 				} else {
 					// remove the navigation
-					//$('#action').hide();
+					$('#action').hide();
 				}
 				
 			});
