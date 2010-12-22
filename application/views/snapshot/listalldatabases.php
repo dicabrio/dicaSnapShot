@@ -5,14 +5,11 @@
 		<style>
 			*{font-size: 11px; font-family: arial}
 
-			#tabmenu {
-				/*border-bottom: 1px solid #000;*/
-
+			#tabholder {
+				position: relative;
+				overflow: hidden;
 				height: 23px;
-				margin: 0 0 0 0;
-				list-style: none;
-				padding: 10px 5px 0 20px;
-				background: rgb(67,74,93);
+				padding: 10px 10px 0 10px;
 				background-image: -moz-linear-gradient(top, rgb(34,37,48) 0, rgb(67,74,93) 20%, rgb(67,74,93) 90%, rgb(34,37,48) 100%);
 				background-image: -webkit-gradient(linear,
 					left bottom,
@@ -23,9 +20,50 @@
 					color-stop(1, rgb(34,37,48))
 					);
 			}
+
+			#action {
+				position: absolute;
+				top: 5px;
+				right: 5px;
+
+				-moz-box-shadow: 0 0 10px #000;
+				-webkit-box-shadow: 0 0 10px #000;
+				box-shadow: 0 0 10px #000;
+
+				border-radius: 5px 0 0 5px;
+			}
+
+			#action a {
+				float: left;
+				padding: 5px;
+				background: #fff;
+				text-decoration: none;
+			}
+
+			#action .prev {
+				border-radius: 5px 0 0 5px;
+			}
+
+			#action .next {
+				border-radius: 0 5px 5px 0;
+			}
+
+			#tabmenu {
+				/*border-bottom: 1px solid #000;*/
+				position: absolute;
+				top: 10px;
+				left: 10px;
+				white-space: nowrap;
+				width: 2000px;
+				height: 23px;
+				margin: 0 0 0 0;
+				padding: 0;
+				list-style: none;
+			}
+
 			#tabmenu li {
 				cursor: pointer;
-
+				display: inline;
 				float: left;
 				height: 23px;
 				margin: 0 2px 0 0;
@@ -85,7 +123,7 @@
 
 			#tabmenu li a {
 				display: block;
-				padding: 6px 5px;
+				padding: 4px 8px;
 				text-decoration: none;
 				color: #fff;
 				font-weight: bold;
@@ -116,14 +154,10 @@
 			.snaps tr td:nth-child(2) { width: 150px;}
 
 		</style>
-		<script type="text/javascript" src="http://www.google.com/jsapi"></script>
+		<script type="text/javascript" src="/cp/js/jquery.js"></script>
 		<script type="text/javascript">
 
-			google.load("jquery", "1");
-			/**
-			 * tabbing system
-			 */
-			google.setOnLoadCallback(function () {
+			$(function () {
 
 				$('#tabmenu li').click(function (e) {
 					e.preventDefault();
@@ -133,7 +167,41 @@
 				$('#tabmenu li.active').click();
 
 				var urlHash = window.location.hash;
-				selectTab($('#tabmenu li.'+urlHash.substr(1)));
+
+				if (urlHash.substr(1)) {
+					selectTab($('#tabmenu li.'+urlHash.substr(1)));
+				}
+
+				var tabBarLength = 0;
+
+				$('#tabmenu li').each(function () {
+					tabBarLength += $(this).width()+2;
+				});
+
+				$('#tabmenu').width(tabBarLength);
+
+				$('#action .prev').click(function (e) {
+					e.preventDefault();
+
+					$('#tabmenu').animate({ 'left' : 10 }, 500);
+				});
+
+				$('#action .next').click(function (e) {
+					e.preventDefault();
+
+					$('#tabmenu').animate({
+						'left' : -(tabBarLength - $('#tabholder').width() + $('#action').width())
+					}, 500);
+				});
+
+				if ($('#tabholder').width() < tabBarLength) {
+					//$('#action').show();
+					// add navigation
+				} else {
+					// remove the navigation
+					//$('#action').hide();
+				}
+				
 			});
 
 			/**
@@ -154,65 +222,72 @@
 				});
 				$('#'+sClassName).show();
 			}
+
 		</script>
 	</head>
 	<body>
 		<h1>Snapshot Manager</h1>
 
 		<?php if (!empty($error)) : ?>
-		<div style="background-color: red; color: #fff; font-weight: bold;padding: 10px 5px;"><?php echo $error; ?></div>
+			<div style="background-color: red; color: #fff; font-weight: bold;padding: 10px 5px;"><?php echo $error; ?></div>
 		<?php endif; ?>
 
-		<ul id="tabmenu">
-			<?php foreach ($databases as $database) : ?>
-			<li class="<?php echo $database->getName(); ?>"><a href="#"><?php echo $database->getName(); ?></a></li>
-			<?php endforeach; ?>
-		</ul>
+			<div id="tabholder">
+				<ul id="tabmenu">
+				<?php foreach ($databases as $database) : ?>
+					<li class="<?php echo $database->getName(); ?>"><a href="#"><?php echo $database->getName(); ?></a></li>
+				<?php endforeach; ?>
+				</ul>
+				<div id="action">
+					<a href="#" class="prev">&lt;</a>
+					<a href="#" class="next">&gt;</a>
+				</div>
+			</div>
 
 		<?php foreach ($databases as $database) : ?>
-		<div class="tab" id="<?php echo $database->getName(); ?>">
-			<div style="margin: 0 0 20px 0;">
-				<a class="button" href="<?php echo Conf::get('general.url.www'); ?>/snapshot/create/<?php echo $database->getName() ?>">Create snapshot</a> of: <?php echo $database->getName(); ?></div>
-				<div>No snapshots yet</div>
-				<table class="snaps">
-					<tr>
-						<th>Name</th>
-						<th>Time</th>
-						<th>actions</th>
-						<th>rename</th>
-						<th>Download</th>
-					</tr>
-					<?php foreach ($database->getSnapshots() as $snapshot) : ?>
-					<tr>
-						<td>
-							<?php $label = $snapshot->getLabel(); ?>
-							<?php if (!empty($label)) : ?>
-							<strong><?php echo $label; ?></strong>
-							<?php else : ?>
-							No name
-							<?php endif; ?>
-						</td>
-						<td>
-							<?php echo date('d-m-Y H:i:s', $snapshot->getTimeOfCreation()); ?>
-						</td>
-						<td>
-							<div>
-								<a href="<?php echo Conf::get('general.url.www'); ?>/snapshot/restore/<?php echo $database->getName(); ?>/<?php echo $snapshot->getSnapshotFile(); ?>" title="Restore" class="button">Restore</a>
-								<a href="<?php echo Conf::get('general.url.www'); ?>/snapshot/delete/<?php echo $database->getName(); ?>/<?php echo $snapshot->getSnapshotFile(); ?>" title="Delete" class="button">Delete</a>
+						<div class="tab" id="<?php echo $database->getName(); ?>">
+							<div style="margin: 0 0 20px 0;">
+								<a class="button" href="<?php echo Conf::get('general.url.www'); ?>/snapshot/create/<?php echo $database->getName() ?>">Create snapshot</a> of: <?php echo $database->getName(); ?></div>
+							<div>No snapshots yet</div>
+							<table class="snaps">
+								<tr>
+									<th>Name</th>
+									<th>Time</th>
+									<th>actions</th>
+									<th>rename</th>
+									<th>Download</th>
+								</tr>
+				<?php foreach ($database->getSnapshots() as $snapshot) : ?>
+							<tr>
+								<td>
+						<?php $label = $snapshot->getLabel(); ?>
+						<?php if (!empty($label)) : ?>
+								<strong><?php echo $label; ?></strong>
+						<?php else : ?>
+										No name
+						<?php endif; ?>
+								</td>
+								<td>
+						<?php echo date('d-m-Y H:i:s', $snapshot->getTimeOfCreation()); ?>
+								</td>
+								<td>
+									<div>
+										<a href="<?php echo Conf::get('general.url.www'); ?>/snapshot/restore/<?php echo $database->getName(); ?>/<?php echo $snapshot->getSnapshotFile(); ?>" title="Restore" class="button">Restore</a>
+										<a href="<?php echo Conf::get('general.url.www'); ?>/snapshot/delete/<?php echo $database->getName(); ?>/<?php echo $snapshot->getSnapshotFile(); ?>" title="Delete" class="button">Delete</a>
+									</div>
+								</td>
+								<td>
+									<form style='height:12px;' action="<?php echo Conf::get('general.url.www'); ?>/snapshot/rename/<?php echo $database->getName(); ?>/<?php echo $snapshot->getSnapshotFile(); ?>" method='post'>
+										<input type="text" value="" name="renameto" size="16" /><input type="submit" value="rename" class="button" />
+									</form>
+								</td>
+								<td>
+									<a href="<?php echo Conf::get('general.url.www'); ?>/snapshot/download/<?php echo $database->getName(); ?>/<?php echo $snapshot->getSnapshotFile(); ?>">Download snapshot</a>
+								</td>
+							</tr>
+				<?php endforeach; ?>
+								</table>
 							</div>
-						</td>
-						<td>
-							<form style='height:12px;' action="<?php echo Conf::get('general.url.www'); ?>/snapshot/rename/<?php echo $database->getName(); ?>/<?php echo $snapshot->getSnapshotFile(); ?>" method='post'>
-								<input type="text" value="" name="renameto" size="16" /><input type="submit" value="rename" class="button" />
-							</form>
-						</td>
-						<td>
-							<a href="<?php echo Conf::get('general.url.www'); ?>/snapshot/download/<?php echo $database->getName(); ?>/<?php echo $snapshot->getSnapshotFile(); ?>">Download snapshot</a>
-						</td>
-					</tr>
-					<?php endforeach; ?>
-				</table>
-		</div>
 		<?php endforeach; ?>
 	</body>
 </html>
